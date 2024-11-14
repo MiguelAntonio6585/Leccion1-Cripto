@@ -1,0 +1,125 @@
+import re
+from collections import Counter
+import math
+
+# Frecuencia de letras en inglés (en porcentaje)
+ENGLISH_FREQUENCY = {
+    'A': 8.167, 'B': 1.492, 'C': 2.782, 'D': 4.253, 'E': 12.702, 'F': 2.228,
+    'G': 2.015, 'H': 6.094, 'I': 6.966, 'J': 0.153, 'K': 0.772, 'L': 4.025,
+    'M': 2.402, 'N': 6.749, 'O': 7.507, 'P': 1.929, 'Q': 0.095, 'R': 5.987,
+    'S': 6.327, 'T': 9.056, 'U': 2.758, 'V': 0.978, 'W': 2.360, 'X': 0.150,
+    'Y': 1.974, 'Z': 0.074
+}
+
+# Función para limpiar el texto, eliminando caracteres no alfabéticos y convirtiendo a mayúsculas
+def clean_text(text):
+    return ''.join([char.upper() for char in text if char.isalpha()])
+
+# Función para convertir las letras a números (A=0, B=1, ..., Z=25)
+def text_to_numbers(text):
+    return [ord(char) - ord('A') for char in text]
+
+# Función para convertir los números de vuelta a letras
+def numbers_to_text(numbers):
+    return ''.join([chr(num + ord('A')) for num in numbers])
+
+# Función para calcular el índice de coincidencia (IC) para una letra en particular en un grupo
+def calculate_ic(text):
+    freq = Counter(text)
+    n = len(text)
+    ic = sum(count * (count - 1) for count in freq.values()) / (n * (n - 1)) if n > 1 else 0
+    return ic
+
+# Función para realizar el análisis de Kasiski
+def kasiski_examination(text):
+    distances = []
+    for i in range(len(text) - 3):
+        substring = text[i:i+3]
+        for j in range(i + 3, len(text) - 3):
+            if text[j:j+3] == substring:
+                distances.append(j - i)
+    return distances
+
+# Función para encontrar el máximo común divisor (GCD) de las distancias encontradas
+def find_key_length(text):
+    distances = kasiski_examination(text)
+    if not distances:
+        return None
+    
+    gcd = distances[0]
+    for dist in distances[1:]:
+        gcd = math.gcd(gcd, dist)
+    
+    return gcd
+
+# Función para realizar el descifrado con el Cifrado de César
+def caesar_decrypt(numbers, shift):
+    return [(num - shift) % 26 for num in numbers]
+
+# Función para encontrar el desplazamiento de César basándose en la frecuencia de letras
+def find_cesar_shift(group):
+    # Contamos las frecuencias de las letras en el grupo
+    freq = Counter(group)
+    # Encontramos la letra más frecuente
+    most_common_letter, _ = freq.most_common(1)[0]
+    # Calculamos el desplazamiento como la diferencia entre la letra más común y la 'E' (más común en inglés)
+    shift = (most_common_letter - ord('E')) % 26
+    return shift
+
+# Función para obtener la clave de Vigenère
+def get_vigenere_key(text, key_length):
+    groups = ['' for _ in range(key_length)]
+    
+    # Agrupamos las letras del texto en columnas según el periodo (longitud de la clave)
+    for i, char in enumerate(text):
+        groups[i % key_length] += char
+    
+    key = []
+    for group in groups:
+        group_numbers = text_to_numbers(group)
+        shift = find_cesar_shift(group_numbers)
+        key.append(chr(shift + ord('A')))
+    
+    return ''.join(key)
+
+# Función para realizar el descifrado de Vigenère
+def vigenere_decrypt(text, key):
+    text_numbers = text_to_numbers(text)
+    key_numbers = text_to_numbers(key)
+    
+    decrypted_numbers = []
+    key_idx = 0
+    
+    for num in text_numbers:
+        shift = key_numbers[key_idx % len(key)]
+        decrypted_numbers.append((num - shift) % 26)
+        key_idx += 1
+    
+    return numbers_to_text(decrypted_numbers)
+
+# Función principal
+def main():
+    # Solicitar al usuario el texto cifrado
+    ciphertext = input("Introduce el texto cifrado con Vigenère: ")
+    
+    # Limpiar el texto
+    clean_ciphertext = clean_text(ciphertext)
+    print(f"Texto limpio: {clean_ciphertext}")
+    
+    # Paso 1: Calcular la longitud de la clave (periodo)
+    key_length = find_key_length(clean_ciphertext)
+    if key_length is None:
+        print("No se pudo estimar la longitud de la clave.")
+        return
+    print(f"Longitud estimada de la clave (periodo): {key_length}")
+    
+    # Paso 2: Obtener la clave de Vigenère
+    key = get_vigenere_key(clean_ciphertext, key_length)
+    print(f"Clave estimada: {key}")
+    
+    # Paso 3: Realizar el descifrado
+    decrypted_text = vigenere_decrypt(ciphertext, key)
+    print(f"Texto descifrado: {decrypted_text}")
+
+if __name__ == "__main__":
+    main()
