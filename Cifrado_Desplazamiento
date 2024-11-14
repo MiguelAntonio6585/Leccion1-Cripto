@@ -1,0 +1,25 @@
+def cifrar_texto(texto, k):
+    # Definir el tamaño del alfabeto inglés (26 letras)
+    N = 26
+    
+    # Filtrar el texto para dejar solo los caracteres alfabéticos y convertir todo a mayúsculas
+    texto_filtrado = ''.join([caracter.upper() for caracter in texto if caracter.isalpha()])
+    
+    resultado = []
+    
+    # Recorrer cada letra del texto filtrado
+    for letra in texto_filtrado:
+        # Convertir la letra a su valor numérico en el alfabeto (0 para 'A', 1 para 'B', ..., 25 para 'Z')
+        m = ord(letra) - ord('A')
+        
+        # Aplicar la operación c = (m + k) % N
+        c = (m + k) % N
+        
+        # Convertir de nuevo al carácter correspondiente
+        letra_cifrada = chr(c + ord('A'))
+        
+        # Añadir la letra cifrada al resultado
+        resultado.append(letra_cifrada)
+    
+    # Unir el resultado en una cadena
+    return ''.join(resultado)
